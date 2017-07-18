@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link href="schedule.css" rel="stylesheet">
+    <title>COSCUP 時間表</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.16.2/axios.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.4.1/vue.js"></script>
+  </head>
+  <body>
+    <div class="schedule" id="schedule">
+      <ul class="date toggles">
+        <li v-for="d in dates">
+          <input type="radio" :id="'date_' + moment(d).format('MMDD')" :value="d" v-model="current_date">
+          <label :for="'date_' + moment(d).format('MMDD')">{{ moment(d).format("M/D") }}</label>
+        </li>
+      </ul>
+      <table class="schedule-header">
+        <tbody>
+          <tr>
+            <th class="row-header"></th>
+            <td class="col-title" v-if="loaded" v-for="place in places">{{ place }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="scroll-wrapper" style="height:600px;" @click="show_event_details(null)">
+        <table class="schedule-main">
+          <tbody>
+            <tr>
+              <th class="row-header"></th>
+              <td v-bind:colspan="places.length">
+                <div class="markers-wrapper">
+                  <div class="markers">
+                    <div class="marker"></div>
+                    <div class="marker"></div>
+                    <div class="marker"></div>
+                    <div class="marker"></div>
+                    <div class="marker"></div>
+                    <div class="marker"></div>
+                    <div class="marker"></div>
+                    <div class="marker"></div>
+                    <div class="marker"></div>
+                    <div class="marker"></div>
+                    <div class="marker"></div>
+                    <div class="marker"></div>
+                    <div class="marker"></div>
+                    <div class="marker"></div>
+                    <div class="marker"></div>
+                    <div class="marker"></div>
+                    <div class="marker"></div>
+                    <div class="marker"></div>
+                    <div class="marker"></div>
+                    <div class="marker"></div>
+                    <div class="marker"></div>
+                    <div class="marker"></div>
+                    <div class="marker"></div>
+                    <div class="marker"></div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <th class="row-header">
+                <div class="hour">0:00</div>
+                <div class="hour">1:00</div>
+                <div class="hour">2:00</div>
+                <div class="hour">3:00</div>
+                <div class="hour">4:00</div>
+                <div class="hour">5:00</div>
+                <div class="hour">6:00</div>
+                <div class="hour">7:00</div>
+                <div class="hour">8:00</div>
+                <div class="hour">9:00</div>
+                <div class="hour">10:00</div>
+                <div class="hour">11:00</div>
+                <div class="hour">12:00</div>
+                <div class="hour">13:00</div>
+                <div class="hour">14:00</div>
+                <div class="hour">15:00</div>
+                <div class="hour">16:00</div>
+                <div class="hour">17:00</div>
+                <div class="hour">18:00</div>
+                <div class="hour">19:00</div>
+                <div class="hour">20:00</div>
+                <div class="hour">21:00</div>
+                <div class="hour">22:00</div>
+                <div class="hour">23:00</div>
+              </th>
+              <td class="events" v-if="loaded" v-for="place in places">
+                <div class="event" v-for="event in visible_events[place]" v-bind:class="event.classes" v-bind:style="event.style" @click.stop="show_event_details(event, $event)">
+                  <div class="event-brief">
+                    <div class="time">{{ display_time(event.begin) }} - {{ display_time(event.end) }}</div>
+                    <div class="subject">{{ event.subject }}</div>
+                    <div class="description" v-if="false">{{ event.description }}</div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="popup-details" v-if="current_event" v-bind:style="event_details_style">
+          <div class="time">{{ display_time(current_event.begin) }} - {{ display_time(current_event.end) }}</div>
+          <div class="subject">{{ current_event.subject }}</div>
+          <div class="description">{{ current_event.description }}</div>
+        </div>
+      </div>
+    </div>
+    <script src="schedule.js"></script>
+  </body>
+</html>
