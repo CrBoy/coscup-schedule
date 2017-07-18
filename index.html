@@ -11,7 +11,7 @@
     <div class="schedule" id="schedule">
       <ul class="date toggles">
         <li v-for="d in dates">
-          <input type="radio" :id="'date_' + moment(d).format('MMDD')" :value="d" v-model="current_date">
+          <input type="radio" :id="'date_' + moment(d).format('MMDD')" :value="d" @change="show_event_details(null)" v-model="current_date">
           <label :for="'date_' + moment(d).format('MMDD')">{{ moment(d).format("M/D") }}</label>
         </li>
       </ul>
