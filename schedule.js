@@ -91,32 +91,6 @@ var vm = new Vue({
 		}
 	},
 	mounted: function(){
-		/*
-		axios.get("0804.json", {responseType: "json"}).then(function(res){
-			return // FIXME
-			var data = res.data
-			var events = data.places.reduce((obj, p) => {
-				obj[p] = []
-				return obj
-			}, {})
-			data.events.reduce((obj, e) => {
-				if(typeof obj[e.place] == "undefined") obj[e.place] = []
-				e.classes = []
-				obj[e.place].push(e)
-				return obj
-			}, events)
-			Object.keys(events).forEach(function(p){
-				var es = events[p]
-				es.sort((e1, e2) => e1.begin - e2.begin)
-			})
-
-			vm.tags = data.tags
-			vm.places = data.places
-			vm.events = events
-			vm.loaded = true
-		})
-		*/
-
 		// load submissions
 		axios.get("https://coscup.org/2017-assets/json/submissions.json", {responseType: "json"}).then(function(res){
 			var data = res.data
@@ -142,6 +116,8 @@ var vm = new Vue({
 			vm.places = Object.keys(events)
 			vm.events = events
 			vm.loaded = true
+
+			document.getElementsByClassName("scroll-wrapper")[0].scrollTop = 850
 		})
 	}
 })
