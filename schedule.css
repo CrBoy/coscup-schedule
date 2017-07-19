@@ -1,5 +1,17 @@
+html,
+body {
+  height: 100%;
+}
+body {
+  margin: 0;
+}
+.schedule {
+  position: relative;
+  padding: 1em 1em 0 1em;
+}
 .schedule ul.toggles {
   list-style: none;
+  margin: 0;
   padding: 0;
   user-select: none;
 }

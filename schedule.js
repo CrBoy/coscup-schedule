@@ -117,7 +117,9 @@ var vm = new Vue({
 			vm.events = events
 			vm.loaded = true
 
-			document.getElementsByClassName("scroll-wrapper")[0].scrollTop = 850
+			var scroll = document.getElementsByClassName("scroll-wrapper")[0]
+			scroll.style.height = (window.innerHeight - scroll.offsetTop - 2) + "px"
+			scroll.scrollTop = 850
 		})
 	}
 })
