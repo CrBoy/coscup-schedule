@@ -3,11 +3,10 @@
 var vm = new Vue({
 	el: "#schedule",
 	data: {
-		//current_date: new Date("Fri Aug 04 2017")
-		current_date: new Date("Fri Aug 05 2017"),
+		current_date: null,
 		current_event: null,
 		event_details_style: {top: 0, left: 0},
-		dates: [new Date("Fri Aug 04 2017"), new Date("Fri Aug 05 2017"), new Date("Fri Aug 06 2017")],
+		dates: [],
 		tag_list: [],
 		places: [],
 		events: {},
@@ -22,10 +21,10 @@ var vm = new Vue({
 		},
 		visible_events: function(){
 			return this.places.reduce((obj, p) => {
-				var events_here = this.events[p].map(e => {
+				let events_here = this.events[p].map(e => {
 					if (e.begin.toDateString() !== this.current_date.toDateString()) return null
 
-					var primary_tag = e.tags.find(t => this.tags.indexOf(t) >= 0)
+					let primary_tag = e.tags.find(t => this.tags.indexOf(t) >= 0)
 					if (primary_tag) {
 						return {
 							tags: e.tags,
@@ -47,7 +46,7 @@ var vm = new Vue({
 
 				var chunks = [], tracks = [], latest = 0
 				for (var i in events_here) {
-					var e = events_here[i]
+					let e = events_here[i]
 
 					if (e.begin >= latest && tracks.length > 0) {
 						// new chunk
@@ -66,7 +65,7 @@ var vm = new Vue({
 				chunks.push(tracks) // finalize
 
 				chunks.forEach(tracks => {
-					var w = 96/(tracks.length)
+					let w = 96/(tracks.length)
 					tracks.forEach((events, i) => {
 						events.forEach(e => {
 							e.style.width = w + '%'
@@ -83,7 +82,7 @@ var vm = new Vue({
 	methods: {
 		moment: moment,
 		px_in_col: function(time) {
-			var minutes = time.getHours() * 60 + time.getMinutes()
+			let minutes = time.getHours() * 60 + time.getMinutes()
 			return (100*24) * minutes / (60*24)
 		},
 		display_time: function(time) {
@@ -92,6 +91,14 @@ var vm = new Vue({
 		show_event_details: function(e, $event) {
 			this.current_event = e
 			if(e) this.event_details_style.top = e.style.top
+		},
+		resize_scroll: function(){
+			let scroll = document.getElementsByClassName("scroll-wrapper")[0]
+			scroll.style.height = (window.innerHeight - scroll.offsetTop - 2) + "px"
+		},
+		scroll_to_show: function(){
+			let scroll = document.getElementsByClassName("scroll-wrapper")[0]
+			scroll.scrollTop = 850
 		}
 	},
 	mounted: function(){
@@ -123,8 +130,9 @@ var vm = new Vue({
 
 		// load submissions
 		axios.get("https://coscup.org/2017-assets/json/submissions.json", {responseType: "json"}).then(function(res){
-			var data = res.data
-			var events = data.reduce((obj, e) => {
+			let data = res.data
+			let dates = data.map(e => moment(e.start).startOf("day").valueOf()).filter((date, i, dates) => dates.indexOf(date) === i).sort().map(ut => new Date(ut))
+			let events = data.reduce((obj, e) => {
 				if(typeof obj[e.room] == "undefined") obj[e.room] = []
 				obj[e.room].push({
 					tags: ["議程"],
@@ -143,14 +151,15 @@ var vm = new Vue({
 				es.sort((e1, e2) => e1.begin - e2.begin)
 			})
 
+			vm.current_date = dates[0]
+			vm.dates = dates
 			vm.tag_list.push({name: "議程", enabled: true})
 			vm.places = Object.keys(events)
 			vm.events = events
 			vm.loaded = true
 
-			var scroll = document.getElementsByClassName("scroll-wrapper")[0]
-			scroll.style.height = (window.innerHeight - scroll.offsetTop - 2) + "px"
-			scroll.scrollTop = 850
+			vm.resize_scroll()
+			vm.scroll_to_show()
 		})
 	}
 })

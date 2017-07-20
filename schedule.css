@@ -9,6 +9,19 @@ body {
   position: relative;
   padding: 1em 1em 0 1em;
 }
+.schedule .add-btn,
+.schedule .del-btn,
+.schedule .sort-btn {
+  display: inline-block;
+  border-radius: 4px;
+  padding: 4px;
+}
+.schedule .add-btn:hover,
+.schedule .del-btn:hover,
+.schedule .sort-btn:hover {
+  background: #21b384;
+  text-shadow: 0 0 4px rgba(255,255,0,0.8);
+}
 .schedule ul.toggle {
   list-style: none;
   margin: 0;
