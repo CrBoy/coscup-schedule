@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <link href="schedule.css" rel="stylesheet">
     <title>COSCUP 時間表</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
@@ -9,17 +10,26 @@
   </head>
   <body>
     <div class="schedule" id="schedule">
-      <ul class="date toggles">
+      <ul class="dates toggle">
         <li v-for="d in dates">
           <input type="radio" :id="'date_' + moment(d).format('MMDD')" :value="d" @change="show_event_details(null)" v-model="current_date">
           <label :for="'date_' + moment(d).format('MMDD')">{{ moment(d).format("M/D") }}</label>
+        </li>
+      </ul>
+      <ul class="places toggle">
+        <li v-for="place in hidden_places"><span class="add-btn" @click="places.push(place)"><i class="fa fa-plus"></i></span>{{ place }}</li>
+      </ul>
+      <ul class="tags toggle">
+        <li v-for="(tag, i) in tag_list">
+          <input type="checkbox" v-bind:id="'tag_toggle' + i" v-model="tag.enabled">
+          <label v-bind:for="'tag_toggle' + i">{{ tag.name }}</label>
         </li>
       </ul>
       <table class="schedule-header">
         <tbody>
           <tr>
             <th class="row-header"></th>
-            <td class="col-title" v-if="loaded" v-for="place in places">{{ place }}</td>
+            <td class="col-title" v-if="loaded" v-for="(place,i) in places"><span class="del-btn" @click="places.splice(i,1)"><i class="fa fa-minus"></i></span>{{ place }}</td>
           </tr>
         </tbody>
       </table>
@@ -31,68 +41,21 @@
               <td v-bind:colspan="places.length">
                 <div class="markers-wrapper">
                   <div class="markers">
-                    <div class="marker"></div>
-                    <div class="marker"></div>
-                    <div class="marker"></div>
-                    <div class="marker"></div>
-                    <div class="marker"></div>
-                    <div class="marker"></div>
-                    <div class="marker"></div>
-                    <div class="marker"></div>
-                    <div class="marker"></div>
-                    <div class="marker"></div>
-                    <div class="marker"></div>
-                    <div class="marker"></div>
-                    <div class="marker"></div>
-                    <div class="marker"></div>
-                    <div class="marker"></div>
-                    <div class="marker"></div>
-                    <div class="marker"></div>
-                    <div class="marker"></div>
-                    <div class="marker"></div>
-                    <div class="marker"></div>
-                    <div class="marker"></div>
-                    <div class="marker"></div>
-                    <div class="marker"></div>
-                    <div class="marker"></div>
+                    <div class="marker" v-for="n in 24"></div>
                   </div>
                 </div>
               </td>
             </tr>
             <tr>
               <th class="row-header">
-                <div class="hour">0:00</div>
-                <div class="hour">1:00</div>
-                <div class="hour">2:00</div>
-                <div class="hour">3:00</div>
-                <div class="hour">4:00</div>
-                <div class="hour">5:00</div>
-                <div class="hour">6:00</div>
-                <div class="hour">7:00</div>
-                <div class="hour">8:00</div>
-                <div class="hour">9:00</div>
-                <div class="hour">10:00</div>
-                <div class="hour">11:00</div>
-                <div class="hour">12:00</div>
-                <div class="hour">13:00</div>
-                <div class="hour">14:00</div>
-                <div class="hour">15:00</div>
-                <div class="hour">16:00</div>
-                <div class="hour">17:00</div>
-                <div class="hour">18:00</div>
-                <div class="hour">19:00</div>
-                <div class="hour">20:00</div>
-                <div class="hour">21:00</div>
-                <div class="hour">22:00</div>
-                <div class="hour">23:00</div>
+                <div class="hour" v-for="(n,i) in 24">{{i}}:00</div>
               </th>
               <td class="events" v-if="loaded" v-for="place in places">
                 <div class="event" v-for="event in visible_events[place]" v-bind:class="event.classes" v-bind:style="event.style" @click.stop="show_event_details(event, $event)">
-                  <div class="event-brief">
-                    <div class="time">{{ display_time(event.begin) }} - {{ display_time(event.end) }}</div>
-                    <div class="subject">{{ event.subject }}</div>
-                    <div class="description" v-if="false">{{ event.description }}</div>
-                  </div>
+                  <div class="time">{{ display_time(event.begin) }} - {{ display_time(event.end) }}</div>
+                  <div class="subject">{{ event.subject }}</div>
+                  <div class="owner">{{ event.owner }}</div>
+                  <!--.description {{ event.description }}-->
                 </div>
               </td>
             </tr>
@@ -100,7 +63,9 @@
         </table>
         <div class="popup-details" v-if="current_event" v-bind:style="event_details_style">
           <div class="time">{{ display_time(current_event.begin) }} - {{ display_time(current_event.end) }}</div>
-          <div class="subject">{{ current_event.subject }}</div>
+          <div class="subject">{{ current_event.subject }}
+            <div class="owner">{{ current_event.owner }}</div>
+          </div>
           <div class="description">{{ current_event.description }}</div>
         </div>
       </div>

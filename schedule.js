@@ -8,12 +8,15 @@ var vm = new Vue({
 		current_event: null,
 		event_details_style: {top: 0, left: 0},
 		dates: [new Date("Fri Aug 04 2017"), new Date("Fri Aug 05 2017"), new Date("Fri Aug 06 2017")],
-		tags: [],
+		tag_list: [],
 		places: [],
 		events: {},
 		loaded: false
 	},
 	computed: {
+		tags: function(){
+			return this.tag_list.filter(t => t.enabled).map(t => t.name)
+		},
 		hidden_places: function(){
 			return Object.keys(this.events).filter(p => this.places.indexOf(p) < 0)
 		},
@@ -28,6 +31,7 @@ var vm = new Vue({
 							tags: e.tags,
 							begin: e.begin,
 							end: e.end,
+							owner: e.owner,
 							subject: e.subject,
 							description: e.description,
 							classes: ["type" + this.tags.indexOf(primary_tag)],
@@ -91,6 +95,32 @@ var vm = new Vue({
 		}
 	},
 	mounted: function(){
+		/*
+		axios.get("0804.json", {responseType: "json"}).then(function(res){
+			return // FIXME
+			var data = res.data
+			var events = data.places.reduce((obj, p) => {
+				obj[p] = []
+				return obj
+			}, {})
+			data.events.reduce((obj, e) => {
+				if(typeof obj[e.place] == "undefined") obj[e.place] = []
+				e.classes = []
+				obj[e.place].push(e)
+				return obj
+			}, events)
+			Object.keys(events).forEach(function(p){
+				var es = events[p]
+				es.sort((e1, e2) => e1.begin - e2.begin)
+			})
+
+			vm.tag_list = data.tags.map(t => {name: t, enabled: true})
+			vm.places = data.places
+			vm.events = events
+			vm.loaded = true
+		})
+		*/
+
 		// load submissions
 		axios.get("https://coscup.org/2017-assets/json/submissions.json", {responseType: "json"}).then(function(res){
 			var data = res.data
@@ -101,6 +131,7 @@ var vm = new Vue({
 					place: e.room,
 					begin: new Date(e.start),
 					end: new Date(e.end),
+					owner: e.speaker.name,
 					subject: e.subject,
 					description: e.summary,
 					classes: [],
@@ -112,7 +143,7 @@ var vm = new Vue({
 				es.sort((e1, e2) => e1.begin - e2.begin)
 			})
 
-			vm.tags.push("議程")
+			vm.tag_list.push({name: "議程", enabled: true})
 			vm.places = Object.keys(events)
 			vm.events = events
 			vm.loaded = true

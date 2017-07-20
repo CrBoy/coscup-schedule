@@ -9,17 +9,17 @@ body {
   position: relative;
   padding: 1em 1em 0 1em;
 }
-.schedule ul.toggles {
+.schedule ul.toggle {
   list-style: none;
   margin: 0;
   padding: 0;
   user-select: none;
 }
-.schedule ul.toggles > li {
+.schedule ul.toggle > li {
   display: inline-block;
   margin-left: 2em;
 }
-.schedule ul.toggles > li:first-child {
+.schedule ul.toggle > li:first-child {
   margin-left: 0;
 }
 .schedule .schedule-header,
@@ -88,6 +88,7 @@ body {
   left: 0;
   right: 4%;
   border-left: 2px solid #000;
+  box-shadow: 0 -1px rgba(0,0,0,0.2) inset;
   padding: 1px 2px;
   cursor: default;
   font-size: 10px;
@@ -95,21 +96,6 @@ body {
 }
 .schedule .event:hover {
   z-index: 100;
-  box-shadow: 0 0 4px rgba(100,100,100,0.5);
-}
-.schedule .event .tags {
-  position: absolute;
-  left: 100%;
-  margin: 0;
-  padding: 2px 1px;
-  list-style: none;
-}
-.schedule .event .tags li {
-  display: inline-block;
-  border: 1px solid #999;
-  border-radius: 2px;
-  padding: 0px 2px;
-  font-size: 0.6em;
 }
 .schedule .event .time {
   font-size: 10px;
@@ -117,58 +103,93 @@ body {
 .schedule .event .subject {
   font-weight: bold;
 }
+.schedule .event .owner {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
 .schedule .event .description {
-  color: inherit;
+  white-space: pre-wrap;
 }
 .schedule .event.type0 {
   background: rgba(255,216,216,0.8);
   border-left-color: #c00;
   color: #c00;
 }
+.schedule .event.type0:hover {
+  background: rgba(255,169,169,0.8);
+}
 .schedule .event.type1 {
   background: rgba(255,238,216,0.8);
   border-left-color: #cc6d00;
   color: #cc6d00;
+}
+.schedule .event.type1:hover {
+  background: rgba(255,217,169,0.8);
 }
 .schedule .event.type2 {
   background: rgba(253,255,216,0.8);
   border-left-color: #becc00;
   color: #becc00;
 }
+.schedule .event.type2:hover {
+  background: rgba(251,255,169,0.8);
+}
 .schedule .event.type3 {
   background: rgba(233,255,216,0.8);
   border-left-color: #52cc00;
   color: #52cc00;
+}
+.schedule .event.type3:hover {
+  background: rgba(206,255,169,0.8);
 }
 .schedule .event.type4 {
   background: rgba(216,255,221,0.8);
   border-left-color: #00cc1b;
   color: #00cc1b;
 }
+.schedule .event.type4:hover {
+  background: rgba(169,255,180,0.8);
+}
 .schedule .event.type5 {
   background: rgba(216,255,243,0.8);
   border-left-color: #0c8;
   color: #0c8;
+}
+.schedule .event.type5:hover {
+  background: rgba(169,255,229,0.8);
 }
 .schedule .event.type6 {
   background: rgba(216,248,255,0.8);
   border-left-color: #00a3cc;
   color: #00a3cc;
 }
+.schedule .event.type6:hover {
+  background: rgba(169,240,255,0.8);
+}
 .schedule .event.type7 {
   background: rgba(216,228,255,0.8);
   border-left-color: #0036cc;
   color: #0036cc;
+}
+.schedule .event.type7:hover {
+  background: rgba(169,195,255,0.8);
 }
 .schedule .event.type8 {
   background: rgba(228,216,255,0.8);
   border-left-color: #3600cc;
   color: #3600cc;
 }
+.schedule .event.type8:hover {
+  background: rgba(195,169,255,0.8);
+}
 .schedule .event.type9 {
   background: rgba(248,216,255,0.8);
   border-left-color: #a300cc;
   color: #a300cc;
+}
+.schedule .event.type9:hover {
+  background: rgba(240,169,255,0.8);
 }
 .schedule .popup-details {
   z-index: 200;
@@ -195,5 +216,6 @@ body {
 }
 .schedule .popup-details .description {
   padding: 5px 20px;
+  white-space: pre-wrap;
   color: inherit;
 }
