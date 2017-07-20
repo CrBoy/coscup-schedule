@@ -19,7 +19,7 @@
       <ul class="places toggle">
         <li v-for="place in hidden_places"><span class="add-btn" @click="places.push(place)"><i class="fa fa-plus"></i></span>{{ place }}</li>
       </ul>
-      <ul class="tags toggle">
+      <ul class="tags toggle" v-if="tag_list.length &gt; 1">
         <li v-for="(tag, i) in tag_list">
           <input type="checkbox" v-bind:id="'tag_toggle' + i" v-model="tag.enabled">
           <label v-bind:for="'tag_toggle' + i">{{ tag.name }}</label>
