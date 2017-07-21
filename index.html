@@ -61,11 +61,10 @@
             </tr>
           </tbody>
         </table>
-        <div class="popup-details" v-if="current_event" v-bind:style="event_details_style">
+        <div class="popup-details" v-if="current_event" v-bind:style="{top: current_event.style.top}">
           <div class="time">{{ display_time(current_event.begin) }} - {{ display_time(current_event.end) }}</div>
-          <div class="subject">{{ current_event.subject }}
-            <div class="owner">{{ current_event.owner }}</div>
-          </div>
+          <div class="subject">{{ current_event.subject }}</div>
+          <div class="owner">{{ current_event.owner }}</div>
           <div class="description">{{ current_event.description }}</div>
         </div>
       </div>

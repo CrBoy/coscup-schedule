@@ -227,6 +227,14 @@ body {
   font-size: 1.2em;
   font-weight: bold;
 }
+.schedule .popup-details .owner {
+  padding: 5px 20px;
+  background: #eee;
+  text-align: right;
+}
+.schedule .popup-details .owner:before {
+  content: "- ";
+}
 .schedule .popup-details .description {
   padding: 5px 20px;
   white-space: pre-wrap;
