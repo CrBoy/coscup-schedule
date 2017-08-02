@@ -1,97 +1,146 @@
 "use strict"
 
+// This function is copied from StackOverflow
+function getScrollbarWidth() {
+    var outer = document.createElement("div");
+    outer.style.visibility = "hidden";
+    outer.style.width = "100px";
+    outer.style.msOverflowStyle = "scrollbar"; // needed for WinJS apps
+
+    document.body.appendChild(outer);
+
+    var widthNoScroll = outer.offsetWidth;
+    // force scrollbars
+    outer.style.overflow = "scroll";
+
+    // add innerdiv
+    var inner = document.createElement("div");
+    inner.style.width = "100%";
+    outer.appendChild(inner);        
+
+    var widthWithScroll = inner.offsetWidth;
+
+    // remove divs
+    outer.parentNode.removeChild(outer);
+
+    return widthNoScroll - widthWithScroll;
+}
+
+[].forEach.call(document.getElementsByClassName("dummy-scrollbar"), e => e.style.width=getScrollbarWidth() + "px")
+
 let vm = new Vue({
 	el: "#schedule",
 	data: {
-		current_date: null,
-		current_event: null,
-		dates_ms: new Set(),
+		hour_px: 100,
+		events: [],
 		tag_list: [],
-		places: [],
-		events: {},
+		place_list: [],
+		current_date: new Date(),
+		current_event: null,
 		loaded: false
 	},
 	computed: {
+		placed_events(){
+			// categorize events by its place
+			let events = this.place_list.reduce((obj, p) => {
+				obj[p.name] = []
+				return obj
+			}, {})
+			this.events.reduce((obj, e) => {
+				if(Array.isArray(e.place)) {
+					e.place.forEach(p => {
+						if(typeof obj[p] == "undefined") obj[p] = []
+						obj[p].push(e)
+					})
+				} else {
+					if(typeof obj[e.place] == "undefined") obj[e.place] = []
+					obj[e.place].push(e)
+				}
+				return obj
+			}, events)
+
+			// sort events in each place
+			Object.keys(events).forEach(p => {
+				events[p].sort((e1, e2) => e1.begin - e2.begin)
+			})
+
+			return events
+		},
 		dates(){
-			return [...this.dates_ms].sort().map(ms => new Date(ms))
+			const ms_set = new Set(this.events.map(e => moment(e.begin).startOf("day").valueOf()))
+			return [...ms_set].sort().map(ms => new Date(ms))
 		},
 		tags(){
 			return this.tag_list.filter(t => t.enabled).map(t => t.name)
 		},
+		places(){
+			return this.place_list.filter(p => p.enabled).map(p => p.name)
+		},
 		hidden_places(){
-			return Object.keys(this.events).filter(p => this.places.indexOf(p) < 0)
+			return this.place_list.filter(p => !p.enabled).map(p => p.name)
 		},
 		visible_events(){
 			return this.places.reduce((obj, p) => {
-				const events_here = this.events[p].map(e => {
-					if (e.begin.toDateString() !== this.current_date.toDateString()) return null
-
+				// filter visible events
+				const events_here = this.placed_events[p].map(e => {
 					const primary_tag = e.tags.find(t => this.tags.indexOf(t) >= 0)
-					if (primary_tag) {
-						return {
-							tags: e.tags,
-							begin: e.begin,
-							end: e.end,
-							owner: e.owner,
-							subject: e.subject,
-							description: e.description,
-							classes: ["type" + this.tag_list.findIndex(tag => tag.name === primary_tag)],
-							style: {
-								top: vm.px_in_col(e.begin) + 'px',
-								height: vm.px_in_col(e.end) - vm.px_in_col(e.begin) + 'px'
-							}
-						}
-					} else {
-						return null
+					if (!primary_tag) return null
+					if (e.begin.toDateString() !== this.current_date.toDateString()) return null
+					if (e.all_day) return null
+
+					return {
+						place: e.place,
+						tags: e.tags,
+						begin: e.begin,
+						end: e.end,
+						owner: e.owner,
+						subject: e.subject,
+						description: e.description,
+						classes: ["type" + this.tag_list.findIndex(tag => tag.name === primary_tag)],
 					}
 				}).filter(e => e)
 
-				let chunks = [], tracks = [], latest = 0
-				for (let i in events_here) {
-					const e = events_here[i]
-
-					if (e.begin >= latest && tracks.length > 0) {
-						// new chunk
-						chunks.push(tracks)
-						tracks = []
-					}
-
-					let track = tracks.find(t => e.begin >= t[t.length-1].end)
-					if (track) // add to track
-						track.push(e)
-					else // new track
-						tracks.push([e])
-
-					if (latest < e.end) latest = e.end
-				}
-				chunks.push(tracks) // finalize
-
-				chunks.forEach(tracks => {
-					const w = 96/(tracks.length)
-					tracks.forEach((events, i) => {
-						events.forEach(e => {
-							e.style.width = w + '%'
-							e.style.left = w*i + '%'
-						})
-					})
-				})
+				this.layout_events(events_here)
 
 				obj[p] = events_here
 				return obj
 			}, {})
-		}
+		},
+		all_day_events(){
+			return this.places.reduce((obj, p) => {
+				// filter visible events
+				const events_here = this.placed_events[p].map(e => {
+					const primary_tag = e.tags.find(t => this.tags.indexOf(t) >= 0)
+					if (!primary_tag) return null
+					if (e.begin.toDateString() !== this.current_date.toDateString()) return null
+					if (!e.all_day) return null
+
+					return {
+						place: e.place,
+						tags: e.tags,
+						begin: e.begin,
+						end: e.end,
+						owner: e.owner,
+						subject: e.subject,
+						description: e.description,
+						classes: ["type" + this.tag_list.findIndex(tag => tag.name === primary_tag)],
+					}
+				}).filter(e => e)
+
+				obj[p] = events_here
+				return obj
+			}, {})
+		},
 	},
 	methods: {
 		moment,
-		px_in_col(time) {
-			const minutes = time.getHours() * 60 + time.getMinutes()
-			return (100*24) * minutes / (60*24)
-		},
-		display_time(time) {
-			return moment(time).format("HH:mm")
-		},
-		show_event_details(e, $event) {
-			this.current_event = e
+		resize_content (hour_px) {
+			this.hour_px = hour_px
+
+			let rules = [].slice.call(document.styleSheets).find(s => s.title === "main").cssRules
+			Array.prototype.find.call(rules, r => r.selectorText === ".schedule .hour").style.height = this.hour_px + "px"
+			Array.prototype.find.call(rules, r => r.selectorText === ".schedule .marker").style.height = this.hour_px / 2 + "px"
+			Array.prototype.find.call(rules, r => r.selectorText === ".schedule .marker").style.marginBottom = this.hour_px / 2 + "px"
 		},
 		resize_scroll(){
 			const scroll = document.getElementsByClassName("scroll-wrapper")[0]
@@ -99,80 +148,121 @@ let vm = new Vue({
 		},
 		scroll_to_show(){
 			const scroll = document.getElementsByClassName("scroll-wrapper")[0]
-			scroll.scrollTop = 850
+			scroll.scrollTop = 8.5 * this.hour_px
 		},
 		add_events(events){
-			const dates_ms = events.map(e => moment(e.begin).startOf("day").valueOf())
-			this.add_dates(dates_ms)
+			const places = new Set(events.map(e => e.place))
+			const tags = new Set([].concat(...events.map(e => e.tags)))
+			places.forEach(p => { this.add_place(p, false) })
+			tags.forEach(p => { this.add_tag(p, false) })
+			this.events.push(...events)
+		},
+		add_tag(name, enabled=true) {
+			let t = this.tag_list.find(t => t.name === name)
+			if(t) t.enabled = t.enabled || enabled
+			else this.tag_list.push({name, enabled})
+		},
+		add_place(name, enabled=true) {
+			if(Array.isArray(name)){
+				name.forEach(p => {
+					this.add_place(p, enabled)
+				})
+			} else {
+				let p = this.place_list.find(p => p.name === name)
+				if(p) p.enabled = p.enabled || enabled
+				else this.place_list.push({name, enabled})
+			}
+		},
+		px_in_col(time) {
+			const minutes = time.getHours() * 60 + time.getMinutes()
+			return (this.hour_px*24) * minutes / (60*24)
+		},
+		display_time(time) {
+			return moment(time).format("HH:mm")
+		},
+		show_event_details(e, $event) {
+			this.current_event = e
+		},
+		layout_events(events){
+			let chunks = [], tracks = [], latest = 0
 
-			events.reduce((obj, e) => {
-				if(typeof obj[e.place] == "undefined") this.$set(obj, e.place, [])
-				obj[e.place].push(e)
-				return obj
-			}, this.events)
+			events.forEach(e => {
+				if (e.begin >= latest && tracks.length > 0) {
+					// new chunk
+					chunks.push(tracks)
+					tracks = []
+				}
 
-			Object.keys(this.events).forEach(p => {
-				this.events[p].sort((e1, e2) => e1.begin - e2.begin)
+				let track = tracks.find(t => e.begin >= t[t.length-1].end)
+				if (track) // add to track
+					track.push(e)
+				else // new track
+					tracks.push([e])
+
+				if (latest < e.end) latest = e.end
+			})
+			chunks.push(tracks) // finalize
+
+			chunks.forEach(tracks => {
+				const w = 96/(tracks.length)
+				tracks.forEach((events, i) => {
+					events.forEach(e => {
+						e.style = {
+							top: this.px_in_col(e.begin) + 'px',
+							height: this.px_in_col(e.end) - vm.px_in_col(e.begin) + 'px',
+							width: w + '%',
+							left: w*i + '%',
+						}
+					})
+				})
 			})
 		},
-		add_dates(dates_ms){
-			this.dates_ms = new Set([...this.dates_ms, ...dates_ms])
+		load(json_uri){
+			axios.get(json_uri, {responseType: "json"}).then(res => {
+				const data = res.data
+
+				const events = data.events.map(e => {
+					e.begin = new Date(e.begin)
+					e.end = new Date(e.end)
+					return e
+				})
+				data.places.forEach(p => { this.add_place(p) })
+				data.tags.forEach(t => { this.add_tag(t) })
+				this.add_events(events)
+				this.current_date = this.dates[0]
+			})
+		},
+		load_submissions(json_uri){
+			axios.get(json_uri, {responseType: "json"}).then(res => {
+				const context_tag = ["議程"]
+				const events = res.data.map(e => ({
+					tags: context_tag,
+					place: e.room,
+					begin: new Date(e.start),
+					end: new Date(e.end),
+					owner: e.speaker.name,
+					subject: e.subject,
+					description: e.summary,
+					classes: [],
+				}))
+
+				this.add_events(events)
+				this.add_tag(context_tag[0])
+				events.map(e => e.place).forEach(p => { this.add_place(p) })
+				this.current_date = this.dates[0]
+			})
 		},
 	},
 	mounted(){
-		/*
-		axios.get("0804.json", {responseType: "json"}).then(function(res){
-			return // FIXME
-			let data = res.data
-			let events = data.places.reduce((obj, p) => {
-				obj[p] = []
-				return obj
-			}, {})
-			data.events.reduce((obj, e) => {
-				if(typeof obj[e.place] == "undefined") obj[e.place] = []
-				e.classes = []
-				obj[e.place].push(e)
-				return obj
-			}, events)
-			Object.keys(events).forEach(function(p){
-				let es = events[p]
-				es.sort((e1, e2) => e1.begin - e2.begin)
-			})
+		this.load_submissions("https://coscup.org/2017-assets/json/submissions.json")
+		this.load("http://localhost:8081/schedule.json")
 
-			vm.tag_list = data.tags.map(t => {name: t, enabled: true})
-			vm.places = data.places
-			vm.events = events
-			vm.loaded = true
-		})
-		*/
-
-		// load submissions
-		axios.get("https://coscup.org/2017-assets/json/submissions.json", {responseType: "json"}).then(res => {
-			const data = res.data
-
-			// get all dates
-			const events = data.map(e => ({
-				tags: ["議程"],
-				place: e.room,
-				begin: new Date(e.start),
-				end: new Date(e.end),
-				owner: e.speaker.name,
-				subject: e.subject,
-				description: e.summary,
-				classes: [],
-			}))
-
-
-			this.add_events(events)
-			this.tag_list.push({name: "議程", enabled: true})
-			this.current_date = this.dates[0]
-			this.places = Object.keys(this.events)
-
-			this.loaded = true
-
-			this.resize_scroll()
-			this.scroll_to_show()
-		})
-	}
+		this.loaded = true
+		window.addEventListener('resize', this.resize_scroll)
+		this.scroll_to_show()
+	},
+	updated(){
+		this.resize_scroll()
+	},
 })
 

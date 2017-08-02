@@ -2,38 +2,57 @@
 <html>
   <head>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link href="schedule.css" rel="stylesheet">
+    <link href="schedule.css" rel="stylesheet" title="main">
     <title>COSCUP 時間表</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.16.2/axios.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.4.1/vue.js"></script>
   </head>
   <body>
-    <div class="schedule" id="schedule">
-      <ul class="dates toggle">
-        <li v-for="d in dates">
-          <input type="radio" :id="'date_' + moment(d).format('MMDD')" :value="d" @change="show_event_details(null)" v-model="current_date">
-          <label :for="'date_' + moment(d).format('MMDD')">{{ moment(d).format("M/D") }}</label>
-        </li>
-      </ul>
-      <ul class="places toggle">
-        <li v-for="place in hidden_places"><span class="add-btn" @click="places.push(place)"><i class="fa fa-plus-circle"></i></span>{{ place }}</li>
-      </ul>
-      <ul class="tags toggle" v-if="tag_list.length &gt; 1">
-        <li v-for="(tag, i) in tag_list">
-          <input type="checkbox" v-bind:id="'tag_toggle' + i" v-model="tag.enabled">
-          <label v-bind:for="'tag_toggle' + i">{{ tag.name }}</label>
-        </li>
-      </ul>
+    <div class="schedule" id="schedule" tabindex="0" @click="show_event_details(null)" @keyup.esc="show_event_details(null)">
+      <div class="loader">
+        <button>+</button>
+        <div class="data-source">
+          <textarea placeholder="貼上資料檔 json，一行一個"></textarea>
+          <button>load</button>
+        </div>
+      </div>
+      <div class="controls" v-if="loaded">
+        <ul class="dates toggle">
+          <li v-for="d in dates">
+            <input type="radio" :id="'date_' + moment(d).format('MMDD')" :value="d" @change="show_event_details(null)" v-model="current_date">
+            <label :for="'date_' + moment(d).format('MMDD')">{{ moment(d).format("M/D") }}</label>
+          </li>
+        </ul>
+        <ul class="places toggle">
+          <li v-for="place in place_list" v-if="!place.enabled"><span class="add-btn" @click="place.enabled = true"><i class="fa fa-plus-circle"></i></span>{{ place.name }}</li>
+        </ul>
+        <ul class="tags toggle" v-if="tag_list.length &gt; 1">
+          <li v-for="(tag, i) in tag_list">
+            <input type="checkbox" v-bind:id="'tag_toggle' + i" v-model="tag.enabled">
+            <label v-bind:for="'tag_toggle' + i">{{ tag.name }}</label>
+          </li>
+        </ul>
+      </div>
       <table class="schedule-header">
-        <tbody>
+        <tbody v-if="loaded">
           <tr>
-            <th class="row-header"><span class="sort-btn" @click="places.sort()"><i class="fa fa-hand-o-right"></i></span></th>
-            <td class="col-title" v-if="loaded" v-for="(place,i) in places"><span class="del-btn" @click="places.splice(i,1)"><i class="fa fa-minus-circle"></i></span>{{ place }}</td>
+            <th class="row-header"></th>
+            <td class="col-title" v-for="place in place_list" v-if="place.enabled"><span class="del-btn" @click="place.enabled = false"><i class="fa fa-minus-circle"></i></span>{{ place.name }}</td>
+            <td class="dummy-scrollbar"></td>
+          </tr>
+          <tr>
+            <th></th>
+            <td class="all-day-events" v-for="place in place_list" v-if="place.enabled">
+              <div class="event" v-for="event in all_day_events[place.name]" v-bind:class="event.classes" @click.stop="show_event_details(event, $event)">
+                <div class="subject">{{ event.subject }}</div>
+                <div class="owner">{{ event.owner }}</div>
+              </div>
+            </td>
           </tr>
         </tbody>
       </table>
-      <div class="scroll-wrapper" style="height:600px;" @click="show_event_details(null)">
+      <div class="scroll-wrapper" style="height:300px;">
         <table class="schedule-main">
           <tbody>
             <tr>
@@ -50,22 +69,36 @@
               <th class="row-header">
                 <div class="hour" v-for="(n,i) in 24">{{i}}:00</div>
               </th>
-              <td class="events" v-if="loaded" v-for="place in places">
+              <td class="events" v-for="place in places" v-if="loaded">
                 <div class="event" v-for="event in visible_events[place]" v-bind:class="event.classes" v-bind:style="event.style" @click.stop="show_event_details(event, $event)">
-                  <div class="time">{{ display_time(event.begin) }} - {{ display_time(event.end) }}</div>
+                  <div class="time" v-show="event.end - event.begin &gt; 15*60*1000">{{ display_time(event.begin) }} - {{ display_time(event.end) }}</div>
                   <div class="subject">{{ event.subject }}</div>
                   <div class="owner">{{ event.owner }}</div>
-                  <!--.description {{ event.description }}-->
                 </div>
               </td>
             </tr>
           </tbody>
         </table>
-        <div class="popup-details" v-if="current_event" v-bind:style="{top: current_event.style.top}">
-          <div class="time">{{ display_time(current_event.begin) }} - {{ display_time(current_event.end) }}</div>
-          <div class="subject">{{ current_event.subject }}</div>
-          <div class="owner">{{ current_event.owner }}</div>
-          <div class="description">{{ current_event.description }}</div>
+      </div>
+      <div class="event-details-wrapper" v-if="current_event">
+        <div class="event-details">
+          <div class="aside">
+            <div class="time">
+              <div class="begin">{{ display_time(current_event.begin) }}</div>
+              <div class="end">{{ display_time(current_event.end) }}</div>
+            </div>
+            <div class="place">
+              <template v-if="Array.isArray(current_event.place)"><span v-for="p in current_event.place">{{ p }}</span></template>
+              <template v-else><span>{{ current_event.place }}</span></template>
+            </div>
+            <div class="tags"><span v-for="t in current_event.tags">{{ t }}</span></div>
+          </div>
+          <div class="main">
+            <div class="subject">{{ current_event.subject }}</div>
+            <div class="owner">{{ current_event.owner }}</div>
+            <div class="description" v-if="current_event.description != ''">{{ current_event.description }}</div>
+            <div class="placeholder" v-else>{{ "(No Content)" }}</div>
+          </div>
         </div>
       </div>
     </div>
