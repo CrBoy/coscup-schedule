@@ -9,25 +9,33 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.4.1/vue.js"></script>
   </head>
   <body>
-    <div class="schedule" id="schedule" tabindex="0" @click="show_event_details(null)" @keyup.esc="show_event_details(null)">
-      <div class="loader">
-        <button>+</button>
-        <div class="data-source">
-          <textarea placeholder="貼上資料檔 json，一行一個"></textarea>
-          <button>load</button>
-        </div>
-      </div>
+    <div class="schedule" id="schedule" tabindex="0" @click="show_event_details(null)" @keyup.esc="show_event_details(null)" @keyup.left="change_date(-1)" @keyup.right="change_date(1)">
       <div class="controls" v-if="loaded">
-        <ul class="dates toggle">
-          <li v-for="d in dates">
-            <input type="radio" :id="'date_' + moment(d).format('MMDD')" :value="d" @change="show_event_details(null)" v-model="current_date">
-            <label :for="'date_' + moment(d).format('MMDD')">{{ moment(d).format("M/D") }}</label>
-          </li>
-        </ul>
-        <ul class="places toggle">
+        <div>
+          <div class="loader"><a @click="loader.open = true">&#65291;</a>
+            <div class="modal-wrapper" v-if="loader.open" @click.self="loader.open = false">
+              <div class="data-source">
+                <textarea placeholder="貼上資料檔 json，一行一個" v-model="loader.text"></textarea>
+                <button @click.stop="load_all(loader.text); loader.text = ''; loader.open = false">load</button>
+              </div>
+            </div>
+          </div>
+          <div>
+            <button @click="place_list.forEach(p =&gt; p.enabled = false)">clear</button>
+          </div>
+          <div>
+            <button @click="place_list.forEach(p =&gt; p.enabled = true)">all</button>
+          </div>
+          <div>
+            <button @click="place_list.forEach(p =&gt; p.enabled = !p.enabled)">invert</button>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <ul class="places toggle pane">
           <li v-for="place in place_list" v-if="!place.enabled"><span class="add-btn" @click="place.enabled = true"><i class="fa fa-plus-circle"></i></span>{{ place.name }}</li>
         </ul>
-        <ul class="tags toggle" v-if="tag_list.length &gt; 1">
+        <div class="divider"></div>
+        <ul class="tags toggle pane">
           <li v-for="(tag, i) in tag_list">
             <input type="checkbox" v-bind:id="'tag_toggle' + i" v-model="tag.enabled">
             <label v-bind:for="'tag_toggle' + i">{{ tag.name }}</label>
@@ -37,7 +45,10 @@
       <table class="schedule-header">
         <tbody v-if="loaded">
           <tr>
-            <th class="row-header"></th>
+            <th class="row-header">
+              <button @click="change_date(-1)"><</button><span v-for="d in dates" v-show="d == current_date">{{ moment(d).format("M/D") }}</span>
+              <button @click="change_date(1)">></button>
+            </th>
             <td class="col-title" v-for="place in place_list" v-if="place.enabled"><span class="del-btn" @click="place.enabled = false"><i class="fa fa-minus-circle"></i></span>{{ place.name }}</td>
             <td class="dummy-scrollbar"></td>
           </tr>
@@ -80,7 +91,7 @@
           </tbody>
         </table>
       </div>
-      <div class="event-details-wrapper" v-if="current_event">
+      <div class="modal-wrapper" v-if="current_event">
         <div class="event-details">
           <div class="aside">
             <div class="time">

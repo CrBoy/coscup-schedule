@@ -37,7 +37,11 @@ let vm = new Vue({
 		place_list: [],
 		current_date: new Date(),
 		current_event: null,
-		loaded: false
+		loader: {
+			open: false,
+			text: "",
+		},
+		loaded: false,
 	},
 	computed: {
 		placed_events(){
@@ -252,10 +256,21 @@ let vm = new Vue({
 				this.current_date = this.dates[0]
 			})
 		},
+		load_all(json_links){
+			json_links.split("\n").forEach(uri => this.load(uri))
+		},
+		change_date(dir){
+			if(dir > 0) dir = 1
+			else if(dir < 0) dir = -1
+
+			let new_index = this.dates.indexOf(this.current_date) + dir
+			if(new_index < 0) new_index = 0
+			if(new_index >= this.dates.length) new_index = this.dates.length - 1
+			this.current_date = this.dates[new_index]
+		},
 	},
 	mounted(){
 		this.load_submissions("https://coscup.org/2017-assets/json/submissions.json")
-		this.load("http://localhost:8081/schedule.json")
 
 		this.loaded = true
 		window.addEventListener('resize', this.resize_scroll)
